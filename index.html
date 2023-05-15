@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flat Custom Fields</title>
+</head>
+<body>
+  <input id="fileInput" type="file" accept=".csv" />
+  <button id="downloadButton" onclick="download()" disabled>IDEL</button>
+  <a id="downloadAnchor" style="display:none"></a>
+<script src="./papaparse.min.js"></script>
+<script src="./parse.js"></script>
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const downloadButton = document.getElementById('downloadButton');
+
+  let outFile;
+
+  fileInput.addEventListener('change', () => {
+    const files = fileInput.files;
+    if (files.length) {
+      fileInput.disabled = true;
+      downloadButton.disabled = true;
+      downloadButton.textContent = 'PROCESSING...';
+      flat(files[0]);
+    }
+  });
+
+  async function flat(file) {
+    const readTask = new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsText(file);
+    });
+
+    const content = await readTask;
+
+    try {
+      const output = parse(content);
+      outFile = new File([output], 'flat.' + file.name, { type: 'text/csv' });
+      downloadButton.disabled = false;
+      downloadButton.textContent = 'DOWNLOAD';
+    } catch (e) {
+      alert(e.message);
+      fileInput.value = null;
+      downloadButton.textContent = 'IDEL';
+    } finally {
+      fileInput.disabled = false;
+    }
+  }
+
+  function download() {
+    if (!outFile) {
+      return;
+    }
+    const a = document.getElementById('downloadAnchor');
+    a.href = URL.createObjectURL(outFile);
+    a.download = outFile.name;
+    a.click();
+  }
+</script>
+</body>
+</html>
